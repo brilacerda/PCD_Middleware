@@ -1,5 +1,6 @@
 package application;
 
+import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -33,6 +34,9 @@ public class App {
 		
 		//Queue Sender
 		TopicPublisher publisher = session.createPublisher(topic);
+
+		//(EXPIRATION TIME) Set time to live as 1 hour (1000 millis x 60 sec x 5 min)
+		publisher.setTimeToLive(30000);
 		
 		TextMessage msg = session.createTextMessage();
 		msg.setText("Are you using a project pattern?");
