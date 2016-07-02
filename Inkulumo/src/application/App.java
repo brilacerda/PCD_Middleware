@@ -12,36 +12,26 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import org.inkulumo.jms.IKEnvironment;
+import org.inkulumo.IKEnvironment;
 
 public class App {
-	
+
 	public static void main(String[] args) throws NamingException, JMSException {
-		
+
 		Context context = new InitialContext(IKEnvironment.instance());
-		
-		// Queue Connection Factory
-		TopicConnectionFactory factory = (TopicConnectionFactory) context.lookup("Inkulumo");
-		
-		// Queue connection
+
+		TopicConnectionFactory factory = (TopicConnectionFactory) context.lookup("InkulumoConnectionFactory");
 		TopicConnection connection = factory.createTopicConnection();
-		
-		// Create a session (boolean transacted, int acknowledgeMode)
-		//https://docs.oracle.com/javaee/7/api/javax/jms/TopicConnection.html#createTopicSession-boolean-int-
 		TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-		
-		//Queue
+
 		Topic topic = (Topic) context.lookup("Middleware");
-		
-		//Queue Sender
+
 		TopicPublisher publisher = session.createPublisher(topic);
 
-		//(EXPIRATION TIME) Set time to live as 1 hour (1000 millis x 60 sec x 5 min)
 		publisher.setTimeToLive(30000);
-		
+
 		TextMessage msg = session.createTextMessage();
 		msg.setText("Are you using a project pattern?");
 		publisher.publish(msg);
 	}
-	
 }
