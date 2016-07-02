@@ -1,6 +1,5 @@
 package application;
 
-import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -13,14 +12,16 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
+import org.inkulumo.jms.IKEnvironment;
+
 public class App {
 	
 	public static void main(String[] args) throws NamingException, JMSException {
 		
-		Context context = new InitialContext();
+		Context context = new InitialContext(IKEnvironment.instance());
 		
 		// Queue Connection Factory
-		TopicConnectionFactory factory = (TopicConnectionFactory)context.lookup("Inkulumo");
+		TopicConnectionFactory factory = (TopicConnectionFactory) context.lookup("Inkulumo");
 		
 		// Queue connection
 		TopicConnection connection = factory.createTopicConnection();
