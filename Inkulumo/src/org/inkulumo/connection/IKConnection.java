@@ -21,12 +21,11 @@ import org.inkulumo.exceptions.IKCouldNotConnectToServerException;
 import org.inkulumo.exceptions.IKRegistrationNotAckedException;
 import org.inkulumo.exceptions.IKShouldNotHaveBeenThrownException;
 import org.inkulumo.exceptions.IKUnimplementedException;
-import org.inkulumo.message.IKNewQueryListener;
 import org.inkulumo.message.IKQuery;
 import org.inkulumo.net.IKRequestHandler;
 import org.inkulumo.session.IKSession;
 
-public class IKConnection implements TopicConnection, IKNewQueryListener {
+public class IKConnection implements TopicConnection, IKConnectionActionListener {
 
 	private String clientID;
 	private List<Session> sessions;
@@ -39,15 +38,17 @@ public class IKConnection implements TopicConnection, IKNewQueryListener {
 		sessions = new ArrayList<Session>();
 
 		try {
-			recvRequestHandler = new IKRequestHandler(address, port, clientID, IKRequestHandler.Type.CONSUMER, this);
-			sendRequestHandler = new IKRequestHandler(address, port, clientID, IKRequestHandler.Type.PRODUCER, this);
+			recvRequestHandler = new IKRequestHandler(address, port, clientID, IKRequestHandler.Type.SUBSCRIBER, this);
+			sendRequestHandler = new IKRequestHandler(address, port, clientID, IKRequestHandler.Type.PUBLISHER, this);
 		} catch (IOException e) {
 			throw new IKCouldNotConnectToServerException();
 		}
+
+		start();
 	}
 
 	@Override
-	public String getClientID() throws JMSException {
+	public String getClientID() {
 		return clientID;
 	}
 
@@ -58,7 +59,7 @@ public class IKConnection implements TopicConnection, IKNewQueryListener {
 
 	@Override
 	public void onNewQuery(IKQuery query) {
-		// TODO Auto-generated method stub
+		System.out.println("New Query: " + query.type);
 	}
 
 	@Override
@@ -73,15 +74,33 @@ public class IKConnection implements TopicConnection, IKNewQueryListener {
 	}
 
 	@Override
-	public Session createSession(boolean transacted, int acknowledgeMode) throws IKUnimplementedException {
-		throw new IKUnimplementedException();
-	}
-
-	@Override
 	public TopicSession createTopicSession(boolean transacted, int acknowledgeMode) throws JMSException {
 		TopicSession session = new IKSession(this, acknowledgeMode);
 		sessions.add(session);
 		return session;
+	}
+
+	@Override
+	public void onSubscribeRequest(String topicName) throws IKCouldNotConnectToServerException {
+		try {
+			sendRequestHandler.send(new IKQuery(getClientID(), IKQuery.Type.SUBSCRIBE, topicName));
+		} catch (IOException e) {
+			throw new IKCouldNotConnectToServerException();
+		}
+	}
+
+	@Override
+	public void onNewTopicRequest(String topicName) throws IKCouldNotConnectToServerException {
+		try {
+			sendRequestHandler.send(new IKQuery(getClientID(), IKQuery.Type.CREATE_TOPIC, topicName));
+		} catch (IOException e) {
+			throw new IKCouldNotConnectToServerException();
+		}
+	}
+
+	@Override
+	public Session createSession(boolean transacted, int acknowledgeMode) throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override
@@ -126,4 +145,5 @@ public class IKConnection implements TopicConnection, IKNewQueryListener {
 			ServerSessionPool sessionPool, int maxMessages) throws IKUnimplementedException {
 		throw new IKUnimplementedException();
 	}
+
 }

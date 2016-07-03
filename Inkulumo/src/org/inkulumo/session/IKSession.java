@@ -1,9 +1,10 @@
 package org.inkulumo.session;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
 
 import javax.jms.BytesMessage;
-import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
@@ -23,19 +24,59 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
+import org.inkulumo.connection.IKConnectionActionListener;
 import org.inkulumo.exceptions.IKUnimplementedException;
 import org.inkulumo.message.IKBytesMessage;
-import org.inkulumo.message.IKMessage;
 
 public class IKSession implements TopicSession {
-	
-	private Connection connection;
+
+	private IKConnectionActionListener connectionListener;
 	private MessageListener messageListener;
 	private int acknowledgeMode;
-	
-	public IKSession(Connection connection, int acknowledgeMode) {
-		this.connection = connection;
+	HashMap<String, List<MessageListener>> subscribers;
+
+	public IKSession(IKConnectionActionListener connectionListener, int acknowledgeMode) {
+		this.connectionListener = connectionListener;
 		this.acknowledgeMode = acknowledgeMode;
+		subscribers = new HashMap<String, List<MessageListener>>();
+	}
+
+	@Override
+	public void unsubscribe(String name) throws JMSException {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public TopicSubscriber createSubscriber(Topic topic, String messageSelector, boolean noLocal) throws JMSException {
+		IKTopicSubscriber subscriber = new IKTopicSubscriber(topic);
+		connectionListener.onSubscribeRequest(topic.getTopicName());
+		subscribers.get(topic.getTopicName()).add(subscriber);
+		return subscriber;
+	}
+
+	@Override
+	public TopicPublisher createPublisher(Topic topic) throws JMSException {
+		return new IKTopicPublisher();
+	}
+
+	@Override
+	public Topic createTopic(String topicName) throws JMSException {
+		return new IKTopic(topicName);
+	}
+
+	@Override
+	public MessageListener getMessageListener() throws JMSException {
+		return messageListener;
+	}
+
+	@Override
+	public void setMessageListener(MessageListener messageListener) throws JMSException {
+		this.messageListener = messageListener;
+	}
+
+	@Override
+	public void run() {
+		// nothing here
 	}
 
 	@Override
@@ -109,21 +150,6 @@ public class IKSession implements TopicSession {
 	}
 
 	@Override
-	public MessageListener getMessageListener() throws JMSException {
-		return messageListener;
-	}
-
-	@Override
-	public void setMessageListener(MessageListener messageListener) throws JMSException {
-		this.messageListener = messageListener; 
-	}
-
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
 	public MessageProducer createProducer(Destination destination) throws IKUnimplementedException {
 		throw new IKUnimplementedException();
 	}
@@ -148,12 +174,6 @@ public class IKSession implements TopicSession {
 	@Override
 	public Queue createQueue(String queueName) throws IKUnimplementedException {
 		throw new IKUnimplementedException();
-	}
-
-	@Override
-	public Topic createTopic(String topicName) throws JMSException {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override
@@ -188,25 +208,7 @@ public class IKSession implements TopicSession {
 	}
 
 	@Override
-	public void unsubscribe(String name) throws JMSException {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
 	public TopicSubscriber createSubscriber(Topic topic) throws JMSException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public TopicSubscriber createSubscriber(Topic topic, String messageSelector, boolean noLocal) throws JMSException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public TopicPublisher createPublisher(Topic topic) throws JMSException {
-		// TODO Auto-generated method stub
-		return null;
+		return createSubscriber(topic, null, false);
 	}
 }

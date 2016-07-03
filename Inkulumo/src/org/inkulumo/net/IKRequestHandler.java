@@ -6,25 +6,25 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import org.inkulumo.connection.IKConnectionActionListener;
 import org.inkulumo.exceptions.IKRegistrationNotAckedException;
 import org.inkulumo.exceptions.IKShouldNotHaveBeenThrownException;
-import org.inkulumo.message.IKNewQueryListener;
 import org.inkulumo.message.IKQuery;
 
 public class IKRequestHandler {
 
 	public enum Type {
-		PRODUCER, CONSUMER
+		PUBLISHER, SUBSCRIBER
 	}
 
 	private InetAddress address;
 	private int port;
 	private Type type;
 	private String clientID;
-	private IKNewQueryListener listener;
+	private IKConnectionActionListener listener;
 	private SmartSocket socket = null;
 
-	public IKRequestHandler(InetAddress address, int port, String clientID, Type type, IKNewQueryListener listener)
+	public IKRequestHandler(InetAddress address, int port, String clientID, Type type, IKConnectionActionListener listener)
 			throws UnknownHostException, IOException, IKRegistrationNotAckedException,
 			IKShouldNotHaveBeenThrownException {
 		this.address = address;
@@ -41,14 +41,14 @@ public class IKRequestHandler {
 
 	private void registerAndWaitAck(String clientID)
 			throws IKRegistrationNotAckedException, IKShouldNotHaveBeenThrownException, IOException {
-		IKQuery.Type queryType = type == Type.PRODUCER ? IKQuery.Type.REGISTER_PRODUCER
-				: IKQuery.Type.REGISTER_CONSUMER;
+		IKQuery.Type queryType = type == Type.PUBLISHER ? IKQuery.Type.REGISTER_PUBLISHER
+				: IKQuery.Type.REGISTER_SUBSCRIBER;
 		IKQuery query = new IKQuery(clientID, queryType);
 		send(query);
 
 		IKQuery ack = (IKQuery) receive();
-		if ((type == Type.PRODUCER && ack.type != IKQuery.Type.REGISTER_PRODUCER_ACK)
-				|| type == Type.CONSUMER && ack.type != IKQuery.Type.REGISTER_CONSUMER_ACK)
+		if ((type == Type.PUBLISHER && ack.type != IKQuery.Type.REGISTER_PUBLISHER_ACK)
+				|| type == Type.SUBSCRIBER && ack.type != IKQuery.Type.REGISTER_SUBSCRIBER_ACK)
 			throw new IKRegistrationNotAckedException();
 	}
 

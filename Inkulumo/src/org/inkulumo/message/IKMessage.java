@@ -63,16 +63,18 @@ public class IKMessage implements Message {
 	}
 
 	@Override
-	public void setJMSReplyTo(Destination replyTo) throws JMSException {
+	public void setJMSReplyTo(Destination replyTo) throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override
-	public Destination getJMSDestination() throws JMSException {
-		return null;
+	public Destination getJMSDestination() throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override
-	public void setJMSDestination(Destination destination) throws JMSException {
+	public void setJMSDestination(Destination destination) throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override
@@ -239,8 +241,8 @@ public class IKMessage implements Message {
 	}
 
 	@Override
-	public void acknowledge() throws JMSException {
-		// TODO Auto-generated method stub
+	public void acknowledge() throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override

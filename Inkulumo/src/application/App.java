@@ -1,13 +1,13 @@
 package application;
 
+import javax.jms.BytesMessage;
 import javax.jms.JMSException;
 import javax.jms.Session;
-import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.jms.TopicConnectionFactory;
-import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
+import javax.jms.TopicSubscriber;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -24,14 +24,13 @@ public class App {
 		TopicConnection connection = factory.createTopicConnection();
 		TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
 
-		Topic topic = (Topic) context.lookup("Middleware");
+		Topic topic = (Topic) context.lookup(IKEnvironment.instance().get(IKEnvironment.ROOMS_TOPIC_KEY));
 
-		TopicPublisher publisher = session.createPublisher(topic);
+		TopicSubscriber subscriber = session.createSubscriber(topic);
 
-		publisher.setTimeToLive(30000);
-
-		TextMessage msg = session.createTextMessage();
-		msg.setText("Are you using a project pattern?");
-		publisher.publish(msg);
+		while (true) {
+			BytesMessage message = (BytesMessage) subscriber.receive();
+			System.out.println(message.readUTF());
+		}
 	}
 }
