@@ -7,6 +7,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import javax.jms.BytesMessage;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 
 import org.inkulumo.exceptions.IKIOException;
@@ -17,6 +18,15 @@ public class IKBytesMessage extends IKMessage implements BytesMessage {
 
 	private DataOutputStream dos = null;
 	private DataInputStream dis = null;
+
+	public IKBytesMessage(byte[] body, Destination destination) {
+		super(destination);
+		this.body = body;
+	}
+
+	public IKBytesMessage() {
+		this(new byte[256], null);
+	}
 
 	private DataInputStream getInputStream() {
 		if (dis == null) {

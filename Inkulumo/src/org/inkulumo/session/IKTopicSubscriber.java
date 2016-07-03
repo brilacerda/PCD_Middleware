@@ -1,42 +1,49 @@
 package org.inkulumo.session;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.Topic;
 import javax.jms.TopicSubscriber;
 
+import org.inkulumo.exceptions.IKShouldNotHaveBeenThrownException;
 import org.inkulumo.exceptions.IKUnimplementedException;
 
 public class IKTopicSubscriber implements TopicSubscriber, MessageListener {
 	
-	private Topic topic;
+	private final Topic topic;
+	private BlockingQueue<Message> messageQueue;
 	
 	public IKTopicSubscriber(Topic topic) {
 		this.topic = topic;
+		messageQueue = new LinkedBlockingQueue<>();
 	}
 
 	@Override
-	public Message receive() throws JMSException {
-		// TODO Auto-generated method stub
-		return null;
+	public MessageListener getMessageListener() {
+		return this;
 	}
 
 	@Override
-	public Message receive(long timeout) throws JMSException {
-		// TODO Auto-generated method stub
-		return null;
+	public Message receive() throws IKShouldNotHaveBeenThrownException {
+		try {
+			return messageQueue.take();
+		} catch (InterruptedException e) {
+			throw new IKShouldNotHaveBeenThrownException();
+		}
 	}
 
 	@Override
 	public Message receiveNoWait() throws JMSException {
-		// TODO Auto-generated method stub
-		return null;
+		return messageQueue.poll();
 	}
 
 	@Override
-	public void close() throws JMSException {
-		// TODO Auto-generated method stub
+	public void onMessage(Message message) {
+		messageQueue.add(message);
 	}
 
 	@Override
@@ -45,22 +52,22 @@ public class IKTopicSubscriber implements TopicSubscriber, MessageListener {
 	}
 
 	@Override
-	public void onMessage(Message message) {
-		// TODO Auto-generated method stub
+	public boolean getNoLocal() throws JMSException {
+		return false;
 	}
 
 	@Override
-	public boolean getNoLocal() throws IKUnimplementedException {
+	public void close() throws IKUnimplementedException {
+		throw new IKUnimplementedException();
+	}
+
+	@Override
+	public Message receive(long timeout) throws IKUnimplementedException {
 		throw new IKUnimplementedException();
 	}
 
 	@Override
 	public String getMessageSelector() throws IKUnimplementedException {
-		throw new IKUnimplementedException();
-	}
-
-	@Override
-	public MessageListener getMessageListener() throws IKUnimplementedException {
 		throw new IKUnimplementedException();
 	}
 
