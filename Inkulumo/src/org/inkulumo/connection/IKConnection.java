@@ -1,8 +1,10 @@
 package org.inkulumo.connection;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.jms.ConnectionConsumer;
 import javax.jms.ConnectionMetaData;
@@ -15,25 +17,33 @@ import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.jms.TopicSession;
 
+import org.inkulumo.exceptions.IKCouldNotConnectToServerException;
+import org.inkulumo.exceptions.IKRegistrationNotAckedException;
+import org.inkulumo.exceptions.IKShouldNotHaveBeenThrownException;
 import org.inkulumo.exceptions.IKUnimplementedException;
+import org.inkulumo.message.IKNewQueryListener;
+import org.inkulumo.message.IKQuery;
+import org.inkulumo.net.IKRequestHandler;
 import org.inkulumo.session.IKSession;
 
-public class IKConnection implements TopicConnection {
+public class IKConnection implements TopicConnection, IKNewQueryListener {
 
-	private InetAddress address;
-	private int port;
-	private List<Session> sessions;
 	private String clientID;
+	private List<Session> sessions;
+	private IKRequestHandler recvRequestHandler;
+	private IKRequestHandler sendRequestHandler;
 
-	public IKConnection(InetAddress address, int port) {
-		this.address = address;
-		this.port = port;
+	public IKConnection(InetAddress address, int port) throws IKRegistrationNotAckedException,
+			IKShouldNotHaveBeenThrownException, IKCouldNotConnectToServerException {
+		clientID = UUID.randomUUID().toString();
 		sessions = new ArrayList<Session>();
-	}
 
-	@Override
-	public Session createSession(boolean transacted, int acknowledgeMode) throws IKUnimplementedException {
-		throw new IKUnimplementedException();
+		try {
+			recvRequestHandler = new IKRequestHandler(address, port, clientID, IKRequestHandler.Type.CONSUMER, this);
+			sendRequestHandler = new IKRequestHandler(address, port, clientID, IKRequestHandler.Type.PRODUCER, this);
+		} catch (IOException e) {
+			throw new IKCouldNotConnectToServerException();
+		}
 	}
 
 	@Override
@@ -44,6 +54,34 @@ public class IKConnection implements TopicConnection {
 	@Override
 	public void setClientID(String clientID) throws JMSException {
 		this.clientID = clientID;
+	}
+
+	@Override
+	public void onNewQuery(IKQuery query) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void start() throws IKCouldNotConnectToServerException {
+		try {
+			sendRequestHandler.init();
+			recvRequestHandler.init();
+			recvRequestHandler.receiveForeverAsync();
+		} catch (IOException | IKRegistrationNotAckedException | IKShouldNotHaveBeenThrownException e) {
+			throw new IKCouldNotConnectToServerException();
+		}
+	}
+
+	@Override
+	public Session createSession(boolean transacted, int acknowledgeMode) throws IKUnimplementedException {
+		throw new IKUnimplementedException();
+	}
+
+	@Override
+	public TopicSession createTopicSession(boolean transacted, int acknowledgeMode) throws JMSException {
+		TopicSession session = new IKSession(this, acknowledgeMode);
+		sessions.add(session);
+		return session;
 	}
 
 	@Override
@@ -62,25 +100,13 @@ public class IKConnection implements TopicConnection {
 	}
 
 	@Override
-	public void start() throws JMSException {
-		// TODO Auto-generated method stub
+	public void stop() throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override
-	public void stop() throws JMSException {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public void close() throws JMSException {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public TopicSession createTopicSession(boolean transacted, int acknowledgeMode) throws JMSException {
-		TopicSession session = new IKSession(this, acknowledgeMode);
-		sessions.add(session);
-		return session;
+	public void close() throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override

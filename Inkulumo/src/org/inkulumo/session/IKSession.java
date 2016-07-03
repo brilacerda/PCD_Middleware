@@ -49,8 +49,8 @@ public class IKSession implements TopicSession {
 	}
 
 	@Override
-	public Message createMessage() throws JMSException {
-		return new IKMessage();
+	public Message createMessage() throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override
@@ -99,8 +99,8 @@ public class IKSession implements TopicSession {
 	}
 
 	@Override
-	public void close() throws JMSException {
-		// TODO Auto-generated method stub
+	public void close() throws IKUnimplementedException {
+		throw new IKUnimplementedException();
 	}
 
 	@Override
@@ -121,7 +121,6 @@ public class IKSession implements TopicSession {
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
