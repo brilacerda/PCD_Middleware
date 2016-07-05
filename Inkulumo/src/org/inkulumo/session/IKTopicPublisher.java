@@ -1,5 +1,8 @@
 package org.inkulumo.session;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import javax.jms.Destination;
 import javax.jms.Message;
 import javax.jms.Topic;
@@ -12,11 +15,27 @@ import org.inkulumo.message.IKMessage;
 public class IKTopicPublisher implements TopicPublisher {
 
 	private final Topic topic;
-	private IKMessageSender sender;
+	private BlockingQueue<Message> messageQueue;
 
 	public IKTopicPublisher(Topic topic, IKMessageSender sender) {
 		this.topic = topic;
-		this.sender = sender;
+		messageQueue = new LinkedBlockingQueue<>();
+
+		final IKMessageSender messageSender = sender;
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (true) {
+					IKMessage message;
+					try {
+						message = (IKMessage) messageQueue.take();
+						messageSender.send(message);
+					} catch (InterruptedException | IKCouldNotConnectToServerException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}).start();
 	}
 
 	@Override
@@ -26,7 +45,7 @@ public class IKTopicPublisher implements TopicPublisher {
 
 	@Override
 	public void send(Message message) throws IKCouldNotConnectToServerException {
-		sender.send((IKMessage) message);
+		messageQueue.add(message);
 	}
 
 	@Override
