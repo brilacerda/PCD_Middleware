@@ -77,7 +77,7 @@ public class IKRequestHandler {
 					try {
 						listener.onNewQuery((IKQuery) receive());
 					} catch (IKShouldNotHaveBeenThrownException | IOException e) {
-						e.printStackTrace();
+						break;
 					}
 				}
 			}

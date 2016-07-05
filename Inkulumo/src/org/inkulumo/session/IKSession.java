@@ -65,9 +65,8 @@ public class IKSession implements TopicSession, MessageListener, IKMessageSender
 
 	@Override
 	public Topic createTopic(String topicName) throws JMSException {
-		IKTopic topic = new IKTopic(topicName);
 		connectionListener.onNewTopicRequest(topicName);
-		return topic;
+		return new IKTopic(topicName);
 	}
 
 	@Override

@@ -1,13 +1,16 @@
 package org.inkulumo.server;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.jms.Topic;
 
+import org.inkulumo.IKEnvironment;
+
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class IKMessagingManager {
 
@@ -17,10 +20,13 @@ public class IKMessagingManager {
 	private Map<String, List<String>> topicSubscribers;
 
 	public IKMessagingManager() {
-		topics = new ArrayList<String>();
-		publishers = new HashMap<String, IKConnectionHandler>();
-		subscribers = new HashMap<String, IKConnectionHandler>();
-		topicSubscribers = new HashMap<String, List<String>>();
+		publishers = new ConcurrentHashMap<String, IKConnectionHandler>();
+		subscribers = new ConcurrentHashMap<String, IKConnectionHandler>();
+		topicSubscribers = new ConcurrentHashMap<String, List<String>>();
+
+		String roomsTopicName = IKEnvironment.instance().get(IKEnvironment.ROOMS_TOPIC_KEY);
+		topics = new ArrayList<String>(Arrays.asList(roomsTopicName));
+		topicSubscribers.put(roomsTopicName, new ArrayList<String>());
 	}
 
 	public void registerPublisher(String clientID, IKConnectionHandler handler) {
@@ -36,7 +42,7 @@ public class IKMessagingManager {
 	}
 
 	public List<String> getTopics() {
-		return topics;
+		return topics.subList(1, topics.size());
 	}
 
 	public Set<String> getSubscriberIDs() {
@@ -66,5 +72,26 @@ public class IKMessagingManager {
 			subscribers.remove(clientID);
 			topicSubscribers.put(topic.toString(), subscribers);
 		}
+	}
+	
+	public void removeHandler(IKConnectionHandler handler) {
+		if (handler == null)
+			return;
+
+		for (String clientID : publishers.keySet())
+			if (publishers.get(clientID) == handler)
+				publishers.remove(clientID);
+
+		for (String clientID : subscribers.keySet()) {
+			if (subscribers.get(clientID) == handler) {
+				subscribers.remove(clientID);
+				unsubscribeFromAllTopics(clientID);
+			}
+		}
+	}
+	
+	public void unsubscribeFromAllTopics(String clientID) {
+		for (String topic : topicSubscribers.keySet())
+			topicSubscribers.get(topic).remove(clientID);
 	}
 }

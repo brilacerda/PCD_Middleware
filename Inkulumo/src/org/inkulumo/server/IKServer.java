@@ -21,11 +21,14 @@ public class IKServer extends Thread {
 	@Override
 	public void run() {
 		while (true) {
+			IKConnectionHandler handler = null;
 			try {
 				SmartSocket socket = new SmartSocket(serverSocket.accept());
-				new IKConnectionHandler(socket, messagingManager).start();
+				handler = new IKConnectionHandler(socket, messagingManager);
+				handler.start();
 			} catch (IOException e) {
-				e.printStackTrace();
+				messagingManager.removeHandler(handler);
+				break;
 			}
 		}
 	}

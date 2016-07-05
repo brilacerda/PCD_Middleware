@@ -6,11 +6,7 @@ import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 
-import javax.jms.JMSException;
-import javax.jms.Topic;
-import javax.jms.TopicConnection;
 import javax.jms.TopicConnectionFactory;
-import javax.jms.TopicSession;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -18,7 +14,7 @@ import javax.naming.NamingException;
 import org.inkulumo.IKEnvironment;
 import org.inkulumo.connection.IKConnectionFactory;
 import org.inkulumo.server.IKServer;
-import org.inkulumo.session.IKSession;
+import org.inkulumo.session.IKTopic;
 
 public class ChatServer {
 
@@ -33,31 +29,20 @@ public class ChatServer {
 			Context context = new InitialContext(IKEnvironment.instance());
 			TopicConnectionFactory connectionFactory = new IKConnectionFactory(InetAddress.getByName("localhost"), PORT);
 			context.bind("InkulumoConnectionFactory", connectionFactory);
+			
+			String roomsTopicName = IKEnvironment.instance().get(IKEnvironment.ROOMS_TOPIC_KEY);
+			context.bind(roomsTopicName, new IKTopic(roomsTopicName));
 		} catch (NamingException | RemoteException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void init() throws UnknownHostException, IOException {
+	private void start() throws UnknownHostException, IOException {
 		server.start();
-		createRoomsTopic();
-	}
-
-	private void createRoomsTopic() {
-		try {
-			Context context = new InitialContext(IKEnvironment.instance());
-			TopicConnectionFactory connectionFactory = (TopicConnectionFactory) context.lookup("InkulumoConnectionFactory");
-			TopicConnection connection = connectionFactory.createTopicConnection();
-			TopicSession session = connection.createTopicSession(false, IKSession.AUTO_ACKNOWLEDGE);
-			Topic topic = session.createTopic(IKEnvironment.instance().get(IKEnvironment.ROOMS_TOPIC_KEY));
-			context.bind(IKEnvironment.instance().get(IKEnvironment.ROOMS_TOPIC_KEY), topic);
-		} catch (NamingException | JMSException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public static void main(String[] args) throws UnknownHostException, IOException {
 		ChatServer server = new ChatServer();
-		server.init();
+		server.start();
 	}
 }

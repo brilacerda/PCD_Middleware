@@ -19,6 +19,7 @@ import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.jms.TopicSession;
 
+import org.inkulumo.IKEnvironment;
 import org.inkulumo.exceptions.IKCouldNotConnectToServerException;
 import org.inkulumo.exceptions.IKRegistrationNotAckedException;
 import org.inkulumo.exceptions.IKShouldNotHaveBeenThrownException;
@@ -28,6 +29,7 @@ import org.inkulumo.message.IKQuery;
 import org.inkulumo.message.IKTextMessage;
 import org.inkulumo.net.IKRequestHandler;
 import org.inkulumo.session.IKSession;
+import org.inkulumo.session.IKTopic;
 
 public class IKConnection implements TopicConnection, IKConnectionActionListener {
 
@@ -42,6 +44,7 @@ public class IKConnection implements TopicConnection, IKConnectionActionListener
 		clientID = UUID.randomUUID().toString();
 		sessions = new ArrayList<Session>();
 		topicListeners = new HashMap<String, List<MessageListener>>();
+		topicListeners.put(IKEnvironment.instance().get(IKEnvironment.ROOMS_TOPIC_KEY), new ArrayList<MessageListener>());
 
 		try {
 			recvRequestHandler = new IKRequestHandler(address, port, clientID, IKRequestHandler.Type.SUBSCRIBER, this);
@@ -65,11 +68,10 @@ public class IKConnection implements TopicConnection, IKConnectionActionListener
 
 	@Override
 	public void onNewQuery(IKQuery query) {
-		System.out.println("New Query: " + query.type.toString());
-
-		if (query.type == IKQuery.Type.MESSAGE)
+		if (query.type == IKQuery.Type.MESSAGE || query.type == IKQuery.Type.BROADCAST_TOPICS)
 			for (MessageListener listener : topicListeners.get(query.topic.toString()))
 				listener.onMessage(new IKTextMessage(query.message, query.topic));
+			
 	}
 
 	@Override
@@ -87,6 +89,7 @@ public class IKConnection implements TopicConnection, IKConnectionActionListener
 	public TopicSession createTopicSession(boolean transacted, int acknowledgeMode) throws JMSException {
 		TopicSession session = new IKSession(this, acknowledgeMode);
 		sessions.add(session);
+		topicListeners.get(IKEnvironment.instance().get(IKEnvironment.ROOMS_TOPIC_KEY)).add((IKSession) session);
 		return session;
 	}
 
@@ -118,7 +121,7 @@ public class IKConnection implements TopicConnection, IKConnectionActionListener
 	@Override
 	public void onNewTopicRequest(String topicName) throws IKCouldNotConnectToServerException {
 		try {
-			sendRequestHandler.send(new IKQuery(getClientID(), IKQuery.Type.CREATE_TOPIC, topicName));
+			sendRequestHandler.send(new IKQuery(getClientID(), IKQuery.Type.CREATE_TOPIC, new IKTopic(topicName), topicName));
 		} catch (IOException e) {
 			throw new IKCouldNotConnectToServerException();
 		}
