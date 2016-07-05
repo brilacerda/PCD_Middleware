@@ -23,14 +23,15 @@ import org.inkulumo.session.IKSession;
 public class ChatServer {
 
 	private IKServer server;
+	private final int PORT = 12345;
 
 	public ChatServer() throws UnknownHostException, IOException {
-		server = new IKServer(12345);
+		server = new IKServer(PORT);
 
 		try {
 			LocateRegistry.createRegistry(1099);
 			Context context = new InitialContext(IKEnvironment.instance());
-			TopicConnectionFactory connectionFactory = new IKConnectionFactory(InetAddress.getByName("localhost"), 12345);
+			TopicConnectionFactory connectionFactory = new IKConnectionFactory(InetAddress.getByName("localhost"), PORT);
 			context.bind("InkulumoConnectionFactory", connectionFactory);
 		} catch (NamingException | RemoteException e) {
 			e.printStackTrace();
